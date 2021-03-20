@@ -85,7 +85,7 @@ const login = async (req, res) => {
     //! throw ile değiştirdik
     //return res.status(401).json({ message: "Email veya şifre yanlış" });
   }
-  /* //!iptal ettik middleware içinde yapıyoruz  
+  /* //!iptal ettik middleware içinde yapıyoruz aşağıya createToken olarak ekledik
   //!Token oluşturuyoruz
   const token = await jwt.sign({ id: user._id }, "SECRETTOKEN", {
     expiresIn: "120m",
@@ -101,6 +101,8 @@ const login = async (req, res) => {
     .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
     .json({ token }); //! userda vardı çıkarttık {user, token } 
     */
+
+  createToken(user, res); //!middleware içinde yapıyoruz
 };
 const logout = async (req, res) => {
   const cookieOptions = {

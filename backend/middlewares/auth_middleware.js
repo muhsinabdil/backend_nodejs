@@ -31,7 +31,7 @@ const authenticationMiddleware = async (req, res, next) => {
 //fonksiyon ile üreteceğiz
 const createToken = async (user, res) => {
   //! paremetredeki user loginden gönderilen user
-  console.log("secret =" + process.env.JWT_SECRET);
+
   const payload = {
     //! jwt sitesinde bu şekilde iki tane bilgi girmeyi tavsiye ediyor
     sub: user._id,

@@ -46,7 +46,7 @@ class authValidation {
             "string.max": "Şifre alanı en fazla 36 karakter olmalıdır",
             "string.required": "Şifre alanı zorunludur",
           }),
-         role: joi.string(),
+          role: joi.string(),
         })
         .validateAsync(req.body);
     } catch (error) {

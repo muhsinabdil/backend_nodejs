@@ -1,5 +1,6 @@
 require("express-async-errors"); //! hataları yakalamak için ve backendin çökmemesi için
 const express = require("express");
+require("dotenv").config(); //! bu olmaz ise .ENV içinden port vs erişemiyor
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
@@ -17,7 +18,6 @@ const cloudinary = require("cloudinary").v2;
 //const HOST = "46.101.99.199";
 const host = process.env.HOST || "localhost";
 const port = process.env.PORT || 3000;
-require("dotenv").config(); //! bu olmaz ise .ENV içinden port vs erişemiyor
 
 console.log("Başlatılıyor");
 db("deneme");
