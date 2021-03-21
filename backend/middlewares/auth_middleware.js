@@ -11,7 +11,6 @@ const authenticationMiddleware = async (req, res, next) => {
   //const { token } = req.cookies;
   const token = req.headers.authorization.split(" ")[1]; //bearer token içinden sadece token alıyoruz
 
-  console.log("token=" + token);
   if (!token) {
     //!token yoksa hata dönecek
     return res.status(400).json({ message: "Giriş yapınız" });
@@ -20,7 +19,7 @@ const authenticationMiddleware = async (req, res, next) => {
   const decodedData = jwt.verify(token, "SECRETTOKEN", {
     ignoreExpiration: true,
   }); //! user controller içinde yazdık bu terimi SECRETTOKEN
-  console.log("decode=" + decodedData);
+
   if (!decodedData) {
     //!token yoksa hata dönecek
     return res.status(400).json({ message: "Token geçersiz" });
@@ -28,6 +27,25 @@ const authenticationMiddleware = async (req, res, next) => {
   req.user = await userModel.findById(decodedData.id); //! decodedData üzerinden gelen id controller içinde ekleniyor
 
   next(); //! middleware olduğu için
+};
+//fonksiyon ile üreteceğiz
+const createToken = async (user, res) => {
+  //! paremetredeki user loginden gönderilen user
+  console.log("secret =" + process.env.JWT_SECRET);
+  const payload = {
+    //! jwt sitesinde bu şekilde iki tane bilgi girmeyi tavsiye ediyor
+    sub: user._id,
+    name: user.name,
+  };
+  const token = await jwt.sign(payload, process.env.JWT_TOKEN_SECRET, {
+    algorithm: "HS512", //! şifreleme algoritması
+    expiresIn: process.env.JWT_EXPIRES_IN, //! sona erme tarihi token süresini dolduracağız yönlendirmeyle logine atmak gerek
+  });
+  return res.status(201).json({
+    success: true,
+    token: token,
+    message: "Giriş başarılı",
+  });
 };
 
 //! kişinin rolünü kontrol edecek
@@ -41,4 +59,4 @@ const roleChecked = (...roles) => {
   };
 };
 
-module.exports = { authenticationMiddleware, roleChecked };
+module.exports = { authenticationMiddleware, createToken, roleChecked };

@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
 const nodemailer = require("nodemailer");
 const APIError = require("../utils/errors.js");
+const Response = require("../utils/response.js");
+const { createToken } = require("../middlewares/auth_middleware.js");
 //! işlemleri yazıyoruz
 //!istekten gelen değerleri body içinden buluyoruz
 //! auth işlemleri
@@ -38,12 +40,13 @@ const register = async (req, res) => {
       lastname,
       email,
       password: passwordHash,
+      role: "user", //! standart kullanıcı
       //! avatarı yükledikten sonra görselin değerlerini alıyoruz
       //  avatar: { public_id: avatar.public_id, url: avatar.secure_url },
     })
-    .then(async (response) => {
+    .then(async (data) => {
       //!Token oluşturuyoruz
-      const token = await jwt.sign({ id: response.id }, "SECRETTOKEN", {
+      const token = await jwt.sign({ id: data.id }, "SECRETTOKEN", {
         expiresIn: "30d", //! 30gün
       });
 
@@ -52,38 +55,37 @@ const register = async (req, res) => {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days expiration
       };
 
-      return res
-        .status(201)
-        .cookie("token", token, cookieOptions)
-        .json({ success: true, token, message: "Kayıt Tamamlandı" });
+      return new Response(data, "Kayıt başarılı").created(res);
     })
     .catch(() => {
-      return res.status(400).json({ message: "Kullanıcı oluşturulamadı" });
+      throw new APIError("Kullanıcı oluşturulamadı", 401);
+      // return res.status(400).json({ message: "Kullanıcı oluşturulamadı" }); //! iptal
     }); //! promise yapısı ile başarılı olup olmadığını görelim
-
-  return res
-    .status(201)
-    .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
-    .json({ success: true, newUser, token, message: "Kayıt Tamamlandı" });
 };
 
 const login = async (req, res) => {
   //!kullanıcıdan alınacak değerler
   const { email, password } = req.body;
 
-  const user = await userModel.findOne({ email });
+  //! user ile userModel yeri aynı isim olsa hata alırdık
+  const user = await userModel.findOne({ email: email }); //! tek email yazsakta olur veya req.body.email de olur
 
   if (!user) {
     //! bulunamadı ise
-    return res.status(400).json({ message: "Kullanıcı bulunamadı" });
+    throw new APIError("Email veya şifre yanlış", 401);
+    //return res.status(400).json({ message: "Kullanıcı bulunamadı" });
   }
-
+  //! çözümleme yapıyoruz
+  //! bcrypt ile şifreleri karşılaştırıyoruz
   const comparePasswords = await bcrypt.compare(password, user.password);
   if (!comparePasswords) {
     //! Şifre yanlış ise
-    return res.status(400).json({ message: "Kullanıcı veya şifre yanlış" });
-  }
+    throw new APIError("Email veya şifre yanlış", 401);
 
+    //! throw ile değiştirdik
+    //return res.status(401).json({ message: "Email veya şifre yanlış" });
+  }
+  /* //!iptal ettik middleware içinde yapıyoruz  
   //!Token oluşturuyoruz
   const token = await jwt.sign({ id: user._id }, "SECRETTOKEN", {
     expiresIn: "120m",
@@ -97,7 +99,8 @@ const login = async (req, res) => {
   res
     .status(201)
     .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
-    .json({ token }); //! userda vardı çıkarttık {user, token }
+    .json({ token }); //! userda vardı çıkarttık {user, token } 
+    */
 };
 const logout = async (req, res) => {
   const cookieOptions = {
