@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema(
     }, */
     role: { type: String, default: "user", required: true },
     resetPasswordToken: String,
+    reset: {
+      code: { type: String, default: null }, //! kod oluşturulunca buraya yazılır
+      time: { type: String, default: null }, //!ileriye bir zaman oluşturulur örneğin 5dk sonra kodun geçersiz olması için
+    },
     resetPasswordExpire: Date,
   },
   { collection: "users", timestamps: true } //! koleksiyon adını verdik ve kayıtlara timestamp ekledik

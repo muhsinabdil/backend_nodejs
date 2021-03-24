@@ -29,7 +29,7 @@ const authenticationMiddleware = async (req, res, next) => {
 
   next(); //! middleware olduğu için
 };
-//fonksiyon ile üreteceğiz
+//!fonksiyon ile üreteceğiz
 const createToken = async (user, res) => {
   //! paremetredeki user loginden gönderilen user
 
@@ -47,6 +47,27 @@ const createToken = async (user, res) => {
     token: token,
     message: "Giriş başarılı",
   });
+};
+//! geçici token oluşturuyoruz
+const createTemporaryToken = async (userId, email) => {
+  //! paremetredeki user loginden gönderilen user
+
+  const payload = {
+    //! jwt sitesinde bu şekilde iki tane bilgi girmeyi tavsiye ediyor
+    sub: userId,
+    email, //! email:email,  aynı isim olduğu için kısalttık
+  };
+  //! tokenı oluşturuyoruz
+  //! şifre sıfırlama için kullanılacak
+  const token = await jwt.sign(
+    payload,
+    process.env.JWT_TEMPORARY_TOKEN_SECRET,
+    {
+      algorithm: "HS512", //! şifreleme algoritması
+      expiresIn: process.env.JWT_TEMPORARY_EXPIRES_IN, //! sona erme tarihi token süresini dolduracağız yönlendirmeyle logine atmak gerek
+    }
+  );
+  return token;
 };
 
 //! kişinin rolünü kontrol edecek
@@ -99,6 +120,7 @@ const tokenCheck = async (req, res, next) => {
 module.exports = {
   authenticationMiddleware,
   createToken,
+  createTemporaryToken,
   roleChecked,
   tokenCheck,
 };

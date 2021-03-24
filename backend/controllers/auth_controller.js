@@ -5,7 +5,12 @@ const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
 const nodemailer = require("nodemailer");
 const APIError = require("../utils/errors.js");
 const Response = require("../utils/response.js");
-const { createToken } = require("../middlewares/auth_middleware.js");
+const {
+  createToken,
+  createTemporaryToken,
+} = require("../middlewares/auth_middleware.js");
+const sendEmail = require("../utils/send_mail.js");
+const moment = require("moment"); //! tarih işlemleri için
 //! işlemleri yazıyoruz
 //!istekten gelen değerleri body içinden buluyoruz
 //! auth işlemleri
@@ -115,78 +120,85 @@ const logout = async (req, res) => {
     .json({ message: "Çıkış işlemi başarılı" });
 };
 const forgotPassword = async (req, res) => {
-  //! kullanıcı tarafından gelen mail ile user var mı diye baktık
-  const user = await userModel.findOne({ email: req.body.email });
+  //! önce user kontrol edilir
+  //!kullanıcı tarafından gelen mail ile user var mı diye baktık
+  const user = await userModel
+    .findOne({ email: req.body.email })
+    .select("name lastname email"); //!
 
   if (!user) {
     return res.status(404).json({ message: "Kullanıcı bulunamadı" });
   }
 
   //! crypto üzerinden
-  const resetToken = crypto.randomBytes(20).toString("hex");
 
-  //!oluşturulan reset token hashlenip resetpasswordtoken oluyor
-  user.resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-  user.resetPasswordExpire = Date.now() + 1 * 24 * 60 * 60 * 1000; //! 1 gün ayarladık
-
-  await user.save({ validateBeforeSave: false });
+  const resetToken = crypto.randomBytes(20).toString("hex"); //!rastgele bir kod oluşur. random değer hex olarak çevrilir
 
   //! reset password url oluşturuyoruz
   const passwordUrl = `${req.protocol}://${req.get(
     "host"
   )}/reset/${resetToken}`;
+
   //! node mailer ile gönderilecek mesaj
-  const message = `Linke tıklayarak şifrenizi sıfırlayabilirsiniz.  ${passwordUrl}`;
+  const message = `Linke tıklayarak şifrenizi sıfırlayabilirsiniz.  ${passwordUrl}`; //! html sayfada gönderilebilir burada
 
-  try {
-    //! hata yoksa node mailer devreye girer
-    const transporter = nodemailler.createTransport({
-      port: 465,
-      host: "smtp.gmail.com",
-      auth: {
-        user: process.env.EMAIL_ADDRESS,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-      secure: true,
-    });
+  const mailOptions = {
+    from: process.env.EMAIL_ADDRESS,
+    to: req.body.email,
+    subject: "Şifre Sıfırlama",
+    text: message,
+  };
+  await sendEmail(mailOptions);
+  console.log("dfsfuser", user),
+    //!oluşturulan reset token hashlenip code oluyor bunu userda güncelliyoruz
+    await user.updateOne(
+      { email },
+      {
+        reset: {
+          code: resetToken, //!alttaki methodla yapmak gerekir
+          // code:  crypto.createHash("sha256").update(resetToken).digest("hex"),
+          time: Date.now() + 15 * 60 * 1000,
+          //time: moment(new Date()).add(15, "minutes").format("YYYY-MM-DD HH:mm:ss"), //! şuandan 15 dk sonrasına kadar geçerli olacak şekilde belirtilen formatta aktarılıyor
+        },
+      }
+    );
 
-    const mailData = {
-      from: process.env.EMAIL_ADDRESS,
-      to: req.body.email,
-      subject: "Şifre Sıfırlama",
-      text: message,
-    };
-    await transporter.sendMail(mailData);
-
-    return res.status(200).json({ message: "Mailinizi kontrol ediniz" });
-  } catch (error) {
-    user.resetPasswordToken = undefined; //! hata olursa boşaltıyoruz
-    user.resetPasswordExpire = undefined; //! hata olursa boşaltıyoruz
-    await user.save({ validateBeforeSave: false });
-    return res.status(500).json({ message: error.message });
-  }
+  return new Response(true, "Mail gönderildi").success(res);
 };
 
 const resetPassword = async (req, res) => {
-  //!gelen bağlantıdan tıkladıktan sonra
-  const resetPasswordToken = crypto
+  //!gelen bağlantıdan tıkladıktan sonra kodu sorgulayıp geçerli olup olmadığını kontrol ediyoruz
+  //! mail =>tgeçici token =>
+  /*  const resetPasswordToken = crypto
     .createHash("sha256")
     .update(req.params.token)
-    .digest("hex");
+    .digest("hex"); */
   //!hangi kullanıcının şifresi değişecek onu bulacağız
-  const user = await userModel.findOne({
-    resetPasswordToken,
-    resetPasswordExpire: { $gt: Date.now() },
-  });
+  const { email, code } = req.body;
+  const user = await userModel
+    .findOne({
+      email,
+    })
+    .select("_id name lastname email reset");
 
   if (!user) {
     //! user bulunamaz ise
-    return res.status(500).json({ message: "Geçersiz istek" });
+    throw new APIError("Kullanıcı bulunamadı", 401); //! kullanıcı yok
   }
 
+  const dbTime = moment(user.reset.time);
+  const nowTime = moment(new Date());
+
+  const timeDiff = dbTime.diff(nowTime, "minutes"); //! zaman farkı
+  console.log("timeDiff", timeDiff);
+
+  if (timeDiff < 0 || user.reset.code === code) {
+    throw new APIError("Kod süresi geçmiş", 401); //! kullanıcı yok
+  }
+
+  const temporaryToken = await createTemporaryToken(user._id, user.email);
+
+  return new Response(temporaryToken, "Şifre sıfırlama başarılı").success(res);
   //! user objesinde değişiklik yapıyoruz
   user.password = req.body.password;
   user.resetPasswordExpire = undefined;
@@ -198,7 +210,7 @@ const resetPassword = async (req, res) => {
   });
   const cookieOptions = {
     httpOnly: true,
-    expires: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi ben 50 gün yaptım
+    expires: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi, ben 50 gün yaptım
   };
 
   res

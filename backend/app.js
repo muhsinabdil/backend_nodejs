@@ -13,6 +13,9 @@ const errorHandlerMiddleware = require("./middlewares/error_handler_middleware.j
 
 const mongoSanitizer = require("express-mongo-sanitize"); //! injection saldırılarını önlemek için
 const corsOptions = require("./helper/cors_options.js"); //! cors ayarları için
+const apiLimiter = require("./middlewares/rate_limit_middleware.js"); //! api istek limiti için
+const momentTimeZone = require("moment-timezone"); //!yerel tarih için
+momentTimeZone.tz.setDefault("Europe/Istanbul"); //! tarih ayarları için
 //const homeRoutes = require("./routes/home_route.js");
 //const productRoutes = require("./routes/products_route.js");
 //const userRoutes = require("./routes/auth_route.js");
@@ -24,7 +27,7 @@ const host = process.env.HOST || "localhost";
 const port = process.env.PORT || 3000;
 
 console.log("Başlatılıyor");
-db("deneme");
+db("ferssr");
 cloudinary.config({
   cloud_name: process.env.CLOUD_NAME,
   api_key: process.env.API_KEY,
@@ -57,7 +60,7 @@ app.use(
 //! daha önce route ları tek tek tanımlayıp burada çağırıyorduk şimdi sadece router çağırıyoruz
 //app.use("/", router);
 //app.use("/", router);
-app.use("/", router);
+app.use("/api/v1", apiLimiter, router);
 
 app.use(errorHandlerMiddleware);
 app.listen(port, host, () => {
