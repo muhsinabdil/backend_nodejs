@@ -67,7 +67,7 @@ const createTemporaryToken = async (userId, email) => {
       expiresIn: process.env.JWT_TEMPORARY_EXPIRES_IN, //! sona erme tarihi token süresini dolduracağız yönlendirmeyle logine atmak gerek
     }
   );
-  return token;
+  return "Bearer " + token;
 };
 
 //! kişinin rolünü kontrol edecek
@@ -117,10 +117,28 @@ const tokenCheck = async (req, res, next) => {
   );
 };
 
+const decodedTemporaryToken = async (temporaryToken) => {
+  const token = temporaryToken.split(" ")[1]; //! token kısmını aldık bearer atılır
+  let user;
+  await jwt.verify(
+    token,
+    process.env.JWT_TEMPORARY_TOKEN_SECRET,
+    async (err, decodedData) => {
+      if (err) throw new APIError("Geçersiz Token", 401);
+      user = await userModel
+        .findById(decodedData.sub)
+        .select("_id name lastname email"); //! çözümlenen alandan id ile arattık
+      if (!user) throw new APIError("Geçersiz Token", 401);
+    }
+  );
+  return user;
+};
+
 module.exports = {
   authenticationMiddleware,
   createToken,
   createTemporaryToken,
   roleChecked,
   tokenCheck,
+  decodedTemporaryToken,
 };

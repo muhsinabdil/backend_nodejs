@@ -6,9 +6,10 @@ const Response = require("../utils/response");
 //! rota tanımlamaları olacak
 const homeRoutes = require("./home_routes");
 const authRoutes = require("./auth_routes");
+const categoryRoutes = require("./category_routes");
 //! temiz kod için yapıyoruz
 //! birden çok servis oluşturacağımız için tek bir yerden yönebileceğiz
-router.use(homeRoutes, authRoutes);
+router.use(homeRoutes, authRoutes, categoryRoutes);
 
 //! dosya yükleme genel bir işlem olduğu için uploadı buraya verdik
 router.post("/upload", function (req, res) {

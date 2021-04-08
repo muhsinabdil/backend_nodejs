@@ -7,6 +7,7 @@ const {
   login,
   logout,
   forgotPassword,
+  resetPasswordCheck,
   resetPassword,
   me,
 } = require("../controllers/auth_controller.js");
@@ -22,7 +23,8 @@ router.post("/register", authValidation.register, register); //! rota + validati
 router.post("/login", authValidation.login, login); //! rota + validationu ekledik, Controller Ekli
 router.get("/logout", logout); //!sadece çıkış olduğu için post gerekmez
 router.post("/forgotPassword", forgotPassword);
-router.post("/reset/:token", resetPassword); //! gelen token ile işlem yapılacak
+router.post("/resetPasswordCheck", resetPasswordCheck); //! gelen token ile işlem yapılacak
+router.post("/resetPassword", resetPassword); //! gelen token ile işlem yapılacak
 router.get("/me", tokenCheck, me); //! gelen token ile işlem yapılacak
 
 module.exports = router; //! routerları export ettik
