@@ -4,7 +4,7 @@ const jwt = require("bcryptjs");
 const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
 const nodemailer = require("nodemailer");
 //! işlemleri yazıyoruz
-//!
+//!istekten gelen değerleri body içinden buluyoruz
 const register = async (req, res) => {
   const avatar = cloudinary.uploader.upload(req.body.avatar, {
     folder: "avatars",
