@@ -207,11 +207,8 @@ const resetPassword = async (req, res) => {
     .json({ user, token });
 };
 
-const userDetail = async (req, res, next) => {
-  //!istediğimiz userı buluyoruz
-  console.log(req.email);
-  const user = await userModel.findOne(req.email);
-  res.status(200).json({ user });
+const me = async (req, res) => {
+  return new Response(req.user).success(res);
 };
 
 //! bunları dışarı çıkarıyoruz,
@@ -221,5 +218,5 @@ module.exports = {
   logout,
   forgotPassword,
   resetPassword,
-  userDetail,
+  me,
 };

@@ -8,10 +8,11 @@ const {
   logout,
   forgotPassword,
   resetPassword,
-  userDetail,
+  me,
 } = require("../controllers/auth_controller.js");
 const {
   authenticationMiddleware,
+  tokenCheck,
 } = require("../middlewares/auth_middleware.js");
 
 const router = express.Router(); //! router oluşturduk
@@ -22,6 +23,6 @@ router.post("/login", authValidation.login, login); //! rota + validationu ekled
 router.get("/logout", logout); //!sadece çıkış olduğu için post gerekmez
 router.post("/forgotPassword", forgotPassword);
 router.post("/reset/:token", resetPassword); //! gelen token ile işlem yapılacak
-router.get("/me", authenticationMiddleware, userDetail); //! gelen token ile işlem yapılacak
+router.get("/me", tokenCheck, me); //! gelen token ile işlem yapılacak
 
 module.exports = router; //! routerları export ettik
