@@ -2,7 +2,7 @@ const userModel = require("../models/user_model.js");
 const bcrypt = require("bcryptjs");
 const jwt = require("bcryptjs");
 const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
-const nodemailler = require("nodemailler");
+const nodemailer = require("nodemailer");
 //! işlemleri yazıyoruz
 //!
 const register = async (req, res) => {
@@ -53,7 +53,7 @@ const login = async (req, res) => {
   //!kullanıcıdan alınacak değerler
   const { email, password } = req.body;
   console.log(email, password);
-  const user = await userModel.findOne({ email });
+  const user = await userModel.findOne(req.body.email);
 
   if (!user) {
     //! bulunamadı ise
@@ -148,10 +148,57 @@ const forgotPassword = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
+  //!gelen bağlantıdan tıkladıktan sonra
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
+  //!hangi kullanıcının şifresi değişecek onu bulacağız
+  const user = await userModel.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() },
+  });
 
+  if (!user) {
+    //! user bulunamaz ise
+    return res.status(500).json({ message: "Geçersiz istek" });
+  }
 
-  
+  //! user objesinde değişiklik yapıyoruz
+  user.password = req.body.password;
+  user.resetPasswordExpire = undefined;
+  user.resetPasswordToken = undefined;
+  await user.save(); //! kaydettik
+  //!Token oluşturuyoruz
+  const token = await jwt.sign({ id: user._id }, "SECRETTOKEN", {
+    expiresIn: 120,
+  });
+  const cookieOptions = {
+    httpOnly: true,
+    expires: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi ben 50 gün yaptım
+  };
+
+  res
+    .status(201)
+    .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
+    .json({ user, token });
+};
+
+const userDetail = async (req, res, next) => {
+  //!istediğimiz userı buluyoruz
+  const user = await userModel.findById(req.params.id);
+  res
+    .status(200)
+
+    .json({ user });
 };
 
 //! bunları dışarı çıkarıyoruz,
-module.exports = { register, login, logout, forgotPassword, resetPassword };
+module.exports = {
+  register,
+  login,
+  logout,
+  forgotPassword,
+  resetPassword,
+  userDetail,
+};
