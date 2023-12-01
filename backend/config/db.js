@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const db = () => {
   mongoose
     .connect(
-      "mongodb+srv://muhsinabdill:deneme123l@clusteregitim.z3tubj0.mongodb.net/",
+      "mongodb+srv://muhsigdfnabdill:ddfgenfgemefdg123l@clusteregitim.z3tubj0.mongodb.net/",
 
       {
         useNewUrlParser: true,
