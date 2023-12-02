@@ -16,6 +16,7 @@ const allProducts = async (req, res) => {
 };
 
 const adminAllProducts = async (req, res) => {
+  //! tüm ürünleri görmek için
   const products = await productModel.find();
 
   res.status(200).json({ products });
@@ -29,7 +30,9 @@ const detailProduct = async (req, res) => {
 const createProduct = async (req, res, next) => {
   let images = [];
 
+  //! images kontrol ediliyor
   if (typeof req.body.images === "string") {
+    //!string ise images içine push ediyoruz
     images.push(req.body.images);
   } else {
     images = req.body.images;
@@ -38,12 +41,13 @@ const createProduct = async (req, res, next) => {
   let allImage = [];
 
   for (let i = 0; i < images.length; i++) {
+    //! görselleri yükleyeceğiz
     const result = await cloudinary.uploader.upload(images[i], {
-      folder: "products",
+      folder: "products", //! folder olarak yüklenecek yeri  verdik
     });
-    allImage.push({ public_id: result.public_id, url: result.secure_url });
+    allImage.push({ public_id: result.public_id, url: result.secure_url }); //! yüklendikten sonra dönen değişkenleri alıyoruz
   }
-  req.body.images = allImage;
+  req.body.images = allImage; //! yapılan import işlemlerinden sonra All images aktardık
 
   const product = await productModel.create(req.body);
   res.status(201).json({ product });
@@ -52,12 +56,14 @@ const createProduct = async (req, res, next) => {
 const deleteProduct = async (req, res, next) => {
   const product = await productModel.findById(req.params.id);
 
+  //!resimleride siliyoruz
   for (let i = 0; i < product.images.length; i++) {
     const result = await cloudinary.uploader.destroy(
       product.images[i].public_id
     );
   }
 
+  //! sonrasında ürünü siliyoruz
   await product.remove();
 
   res.status(200).json({ message: "Ürün silindi" });
@@ -76,6 +82,7 @@ const updateProduct = async (req, res, next) => {
 
   if (images !== undefined) {
     //image uploads
+    //! dışardan görsel geliyorsa resimleride değiştiriyoruz o yüzden eskileri siliyoruz
     for (let i = 0; i < product.images.length; i++) {
       const result = await cloudinary.uploader.destroy(
         product.images[i].public_id
@@ -102,23 +109,36 @@ const updateProduct = async (req, res, next) => {
 };
 
 const createReview = async (req, res, next) => {
+  //! değerlendirme işlemi için
+  //!gelen parametreler neler onları belirliyoruz
   const { productId, comment, rating } = req.body;
+
+  //! nesne  oluşturduk map gibi
   const review = {
     user: req.user._id,
     name: req.user.name,
     comment,
-    rating: Number(rating),
+    rating: Number(rating), //!sayıya çevirdik
   };
 
+  //! yorum yapılan ürünü bulduruyoruz
   const product = await productModel.findById(productId);
+
+  //!ürünün içindeki yorumlara push ederek ekliyoruz
   product.reviews.push(review);
   let avg = 0;
+
+  //! tek tek gezerek ratingleri toplayalım
   product.reviews.forEach((review) => {
     avg += review.rating;
   });
-  product.rating = avg / product.reviews.length;
-  await product.save({ validateBeforeSave: true });
 
+  //! ratingi yorum sayısına böldük
+  product.rating = avg / product.reviews.length;
+
+  //! kaydetmek için
+  await product.save({ validateBeforeSave: true });
+  //! sonuç dönüyoruz
   res.status(200).json({ message: "Yorumunuz Kaydedildi" });
 };
 

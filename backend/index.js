@@ -35,7 +35,6 @@ app.get("/products", (req, res) => {
   res.status(200).json({ message: "Rota belirlendi" });
 });
 
-console.log("burada işlem");
 db();
 
 app.listen(PORT, HOST, () => {
