@@ -4,11 +4,7 @@ const jwt = require("bcryptjs");
 
 //! işlemleri yazıyoruz
 //!
-const register = async (req, res) => {
-
-    const {}
-
-};
+const register = async (req, res) => {};
 const login = async (req, res) => {};
 const logout = async (req, res) => {};
 const forgotPassword = async (req, res) => {};
