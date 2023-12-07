@@ -49,6 +49,7 @@ const createProduct = async (req, res, next) => {
     allImage.push({ public_id: result.public_id, url: result.secure_url }); //! yüklendikten sonra dönen değişkenleri alıyoruz
   }
   req.body.images = allImage; //! yapılan import işlemlerinden sonra All images aktardık
+  req.body.user = req.user.id; //! id verdik
 
   const product = await productModel.create(req.body);
   res.status(201).json({ product });
