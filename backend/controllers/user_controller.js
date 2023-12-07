@@ -107,7 +107,7 @@ const forgotPassword = async (req, res) => {
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  user.resetPasswordExpire = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000); //! 1 gün ayarladık
+  user.resetPasswordExpire = Date.now() + 1 * 24 * 60 * 60 * 1000; //! 1 gün ayarladık
 
   await user.save({ validateBeforeSave: false });
 
