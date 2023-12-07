@@ -5,6 +5,7 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const db = require("./config/db.js");
 const productRoutes = require("./routes/products_route.js");
+const userRoutes = require("./routes/user_route.js");
 const cloudinary = require("cloudinary").v2;
 
 dotenv.config();
@@ -29,11 +30,8 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 
 app.use(cookieParser());
 
-app.use("/products", productRoutes);
-
-app.get("/products", (req, res) => {
-  res.status(200).json({ message: "Rota belirlendi" });
-});
+app.use("/", productRoutes);
+app.use("/", userRoutes);
 
 db();
 

@@ -4,6 +4,7 @@ const ProductFilter = require("../utils/product_filter.js");
 const { publicDecrypt } = require("crypto");
 
 const allProducts = async (req, res) => {
+  console.log("=====>" + req.body.name); // TODO: kaldır
   //! filter pagination tarafına gidecek sayfada gelecek ürün sayısı
   const resultPerPage = 10;
   //! product filter => tüm productlar yerine filtrelenmişleri alır
