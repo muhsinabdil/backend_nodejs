@@ -8,7 +8,6 @@ const {
   updateProduct,
   createReview,
 } = require("../controllers/product_controller.js");
-<<<<<<< HEAD
 const {
   authenticationMiddleware,
   roleChecked,
@@ -46,17 +45,5 @@ router.get(
   roleChecked("admin"),
   adminAllProducts
 );
-=======
-
-const router = express.Router();
-
-router.get("/products", allProducts);
-router.get("/admin/products", adminAllProducts);
-router.get("/products/:id", detailProduct);
-router.post("/products/new", createProduct);
-router.post("/products/newReview", createReview);
-//router.delete("/products/:id", this.delete);
-router.put("/products/:id", updateProduct);
->>>>>>> 7ed2936cd95e8db3835ec98848a897673cc3efd3
 
 module.exports = router;
