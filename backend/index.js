@@ -12,7 +12,7 @@ dotenv.config();
 
 console.log("Starting");
 
-const HOST = "127.0.0.1";
+const HOST = "46.101.99.199";
 const PORT = 3000;
 
 cloudinary.config({
