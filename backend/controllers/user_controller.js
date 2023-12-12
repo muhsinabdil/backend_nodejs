@@ -1,39 +1,41 @@
 const userModel = require("../models/user_model.js");
 const bcrypt = require("bcryptjs");
-const jwt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
 const nodemailer = require("nodemailer");
 //! işlemleri yazıyoruz
 //!istekten gelen değerleri body içinden buluyoruz
 //! auth işlemleri
 const register = async (req, res) => {
-  const avatar = cloudinary.uploader.upload(req.body.avatar, {
+  /*  const avatar = cloudinary.uploader.upload(req.body.avatar, {
     folder: "avatars",
     width: 130,
     crop: "scale",
-  });
+  }); */
   //!kullanıcıdan alınacak değerler
   const { name, email, password } = req.body;
-  console.log(name, email, password);
+
   //! gelen mail ila sorgu yapıyoruz
   const user = await userModel.findOne({ email });
   if (user) {
     //! aynı mail daha önce kullanılmış ise bunu reddetmek gerek
     return res.status(400).json({ message: "Bu kullanıcı zaten var" });
   }
+
   //! şifreyi hashledik
   const passwordHash = await bcrypt.hash(password, 10);
   if (password.length < 6) {
     //! uyarı verdirdik
     return res.status(400).json({ message: "Şifre en az 6 karakterli olmalı" });
   }
+
   //! kullanıcı oluşturduk burada hashli passwordu verdik
   const newUser = await userModel.create({
     name,
     email,
     password: passwordHash,
     //! avatarı yükledikten sonra görselin değerlerini alıyoruz
-    avatar: { public_id: avatar.public_id, url: avatar.secure_url },
+    //  avatar: { public_id: avatar.public_id, url: avatar.secure_url },
   });
   //!Token oluşturuyoruz
   const token = await jwt.sign({ id: newUser._id }, "SECRETTOKEN", {
@@ -53,8 +55,8 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   //!kullanıcıdan alınacak değerler
   const { email, password } = req.body;
-  console.log(email, password);
-  const user = await userModel.findOne(req.body.email);
+
+  const user = await userModel.findOne({ email });
 
   if (!user) {
     //! bulunamadı ise
@@ -69,18 +71,18 @@ const login = async (req, res) => {
 
   //!Token oluşturuyoruz
   const token = await jwt.sign({ id: user._id }, "SECRETTOKEN", {
-    expiresIn: 120,
+    expiresIn: "120m",
   });
 
   const cookieOptions = {
     httpOnly: true,
-    expires: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi ben 50 gün yaptım
+    expires: new Date(Date.now() + 50000 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi ben 50 gün yaptım
   };
 
   res
     .status(201)
     .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
-    .json({ user, token });
+    .json({ token }); //! userda vardı çıkarttık {user, token }
 };
 const logout = async (req, res) => {
   const cookieOptions = {
@@ -187,11 +189,9 @@ const resetPassword = async (req, res) => {
 
 const userDetail = async (req, res, next) => {
   //!istediğimiz userı buluyoruz
-  const user = await userModel.findById(req.params.id);
-  res
-    .status(200)
-
-    .json({ user });
+  console.log(req.email);
+  const user = await userModel.findOne(req.email);
+  res.status(200).json({ user });
 };
 
 //! bunları dışarı çıkarıyoruz,
