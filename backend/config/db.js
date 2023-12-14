@@ -1,9 +1,9 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose"); //! db bağlantısı için kullanılan paket
 
 const db = () => {
   mongoose
     .connect(
-      process.env.db_connection,
+      process.env.DB_CONNECTION,
 
       {
         useNewUrlParser: true,
@@ -11,11 +11,10 @@ const db = () => {
       }
     )
     .then(() => {
-      console.log("mongodb bağlantı kuruldu");
+      console.log("MongoDB bağlantısı başarılı");
     })
     .catch((err) => {
-      console.log(err);
-      console.log("mongodb bağlantı hatası");
+      console.log("MongoDB bağlantısı sırasında hata oluştu", err);
     });
 };
 

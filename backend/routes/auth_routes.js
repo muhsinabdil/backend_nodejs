@@ -7,13 +7,14 @@ const {
   forgotPassword,
   resetPassword,
   userDetail,
-} = require("../controllers/user_controller.js");
+} = require("../controllers/auth_controller.js");
 const {
   authenticationMiddleware,
 } = require("../middlewares/auth_middleware.js");
 
-const router = express.Router();
+const router = express.Router(); //! router oluşturduk
 
+//! yol ve kontroller alır
 router.post("/register", register);
 router.post("/login", login);
 router.get("/logout", logout); //!sadece çıkış olduğu için post gerekmez

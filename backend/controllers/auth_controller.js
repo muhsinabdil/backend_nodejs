@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto"); //!node.js içinde var kurmaya gerek yok
 const nodemailer = require("nodemailer");
+const APIError = require("../utils/errors.js");
 //! işlemleri yazıyoruz
 //!istekten gelen değerleri body içinden buluyoruz
 //! auth işlemleri
@@ -13,45 +14,59 @@ const register = async (req, res) => {
     crop: "scale",
   }); */
   //!kullanıcıdan alınacak değerler
-  const { name, email, password } = req.body;
+  const { name, lastname, email, password } = req.body;
 
   //! gelen mail ila sorgu yapıyoruz
-  const user = await userModel.findOne({ email });
-  if (user) {
+  const userCheck = await userModel.findOne({ email });
+  if (userCheck) {
     //! aynı mail daha önce kullanılmış ise bunu reddetmek gerek
-    return res.status(400).json({ message: "Bu kullanıcı zaten var" });
+    // return res.status(400).json({ message: "Bu kullanıcı zaten var" });
+    throw new APIError("Bu kullanıcı zaten var", 401); //! daha önce return kullanıyorduk artık error middleware ile yapıyoruz
   }
 
-  //! şifreyi hashledik
-  const passwordHash = await bcrypt.hash(password, 10);
   if (password.length < 6) {
     //! uyarı verdirdik
     return res.status(400).json({ message: "Şifre en az 6 karakterli olmalı" });
   }
+  //! şifreyi hashledik
+  const passwordHash = await bcrypt.hash(password, 10); //! 10 tur sayısı 10 turda hashlenecek
 
   //! kullanıcı oluşturduk burada hashli passwordu verdik
-  const newUser = await userModel.create({
-    name,
-    email,
-    password: passwordHash,
-    //! avatarı yükledikten sonra görselin değerlerini alıyoruz
-    //  avatar: { public_id: avatar.public_id, url: avatar.secure_url },
-  });
-  //!Token oluşturuyoruz
-  const token = await jwt.sign({ id: newUser._id }, "SECRETTOKEN", {
-    expiresIn: "1h",
-  });
+  const newUser = await userModel
+    .create({
+      name,
+      lastname,
+      email,
+      password: passwordHash,
+      //! avatarı yükledikten sonra görselin değerlerini alıyoruz
+      //  avatar: { public_id: avatar.public_id, url: avatar.secure_url },
+    })
+    .then(async (response) => {
+      //!Token oluşturuyoruz
+      const token = await jwt.sign({ id: response.id }, "SECRETTOKEN", {
+        expiresIn: "30d", //! 30gün
+      });
 
-  const cookieOptions = {
-    httpOnly: true,
-    expires: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000), //!sanırım geçerlilik süresi ben 50 gün yaptım
-  };
+      const cookieOptions = {
+        httpOnly: true,
+        expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days expiration
+      };
 
-  res
+      return res
+        .status(201)
+        .cookie("token", token, cookieOptions)
+        .json({ success: true, token, message: "Kayıt Tamamlandı" });
+    })
+    .catch(() => {
+      return res.status(400).json({ message: "Kullanıcı oluşturulamadı" });
+    }); //! promise yapısı ile başarılı olup olmadığını görelim
+
+  return res
     .status(201)
     .cookie("token", token, cookieOptions) //! cookilere tokenı "token" olarak kaydettik
-    .json({ newUser, token });
+    .json({ success: true, newUser, token, message: "Kayıt Tamamlandı" });
 };
+
 const login = async (req, res) => {
   //!kullanıcıdan alınacak değerler
   const { email, password } = req.body;
@@ -127,14 +142,14 @@ const forgotPassword = async (req, res) => {
       port: 465,
       host: "smtp.gmail.com",
       auth: {
-        user: process.env.email_address,
-        pass: process.env.email_password,
+        user: process.env.EMAIL_ADDRESS,
+        pass: process.env.EMAIL_PASSWORD,
       },
       secure: true,
     });
 
     const mailData = {
-      from: process.env.email_address,
+      from: process.env.EMAIL_ADDRESS,
       to: req.body.email,
       subject: "Şifre Sıfırlama",
       text: message,
