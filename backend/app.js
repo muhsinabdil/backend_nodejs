@@ -4,6 +4,7 @@ require("dotenv").config(); //! bu olmaz ise .ENV içinden port vs erişemiyor
 const cors = require("cors"); //! gelen isteklerin urllerini kontrol edip kabul eder veya ret eder
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const path = require("path");
 
 const db = require("./config/db.js");
 //! temiz kod ile tek bir router tanımlıyoruz olmasaydı her routerı tek tek tanımlardık
@@ -35,8 +36,15 @@ app.use(cors(corsOptions)); //! gelen isteklerin urllerini kontrol edip kabul ed
 
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 
-app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-
+app.use(
+  bodyParser.urlencoded({
+    limit: "30mb",
+    extended: true,
+    parameterLimit: 50000,
+  })
+);
+app.use(express.static(path.join(__dirname, "public"))); //! public dosyası oluştruracak
+app.use("/uploads", express.static(path.join(__dirname)));
 app.use(cookieParser());
 
 //! Injection saldırılarını önlemek için
